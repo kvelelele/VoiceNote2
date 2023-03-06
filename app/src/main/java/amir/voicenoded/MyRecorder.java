@@ -1,36 +1,28 @@
 package amir.voicenoded;
 
-import android.app.Activity;
-import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.pm.PackageManager;
 import android.media.MediaRecorder;
 import android.os.Environment;
-import android.Manifest;
-import android.util.Log;
+import android.os.SystemClock;
 import android.view.View;
 import android.widget.Chronometer;
 import android.widget.EditText;
 import android.view.LayoutInflater;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
+import amir.voicenoded.Database.MyDbHelper;
+
 public class MyRecorder {
 
-    MainActivity mainActivity = new MainActivity();
 
     Context context;
 
@@ -38,53 +30,74 @@ public class MyRecorder {
     private String recordPath;
     private String recordFile;
 
-
+    private MyDbHelper myDbHelper = new MyDbHelper(context);
 
 
     Chronometer timer;
+//            = MainActivity.mtimer;
 
 
     SimpleDateFormat format = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
     DateFormat df = new SimpleDateFormat("HH:mm",Locale.getDefault());
 
+
+
     public void startRecording(){
-        System.out.println("                               111111112");
-        MainActivity.timerSetBase(timer);
+        System.out.println("                               111111111");
+        MainActivity.mtimer.setBase(SystemClock.elapsedRealtime());
         System.out.println("                               222222222");
-        MainActivity.timerStart(timer);
+        MainActivity.mtimer.start();
         System.out.println("                               3333333333");
 
         recordPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+        System.out.println("                               RECORD PATH " + recordPath);
+
         System.out.println("                               444444444444");
 
         String date = format.format(new Date());
 
         String time = df.format(Calendar.getInstance().getTime());
 
-        recordFile = "REC_" + time + "_" + date + ".3gp";
-
+        recordFile = "REC" + time + "." + date + ".3gp";
+        System.out.println("                               RECORD FILE   " + recordFile);
         mediaRecorder = new MediaRecorder();
         mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
         mediaRecorder.setOutputFile(recordPath + "/" + recordFile);
         mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
 
+        // add insert to db
+
         try {
+            System.out.println("                               55555555555");
             mediaRecorder.prepare();
+
+            System.out.println("                               66666666");
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        mediaRecorder.start();
+        try {
+            System.out.println("                               77777777");
+            Thread.sleep(5000);
+            System.out.println("                               88888888888");
+            mediaRecorder.start();
+            System.out.println("                               999999999");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("                               999999999");
+
+        System.out.println("                               AAAAAAAAAA");
     }
 
 
 
 
     public void stopRecording(){
-        MainActivity.timerStop(timer);
-        String isDuration = MainActivity.timerGetTime(timer);
-        MainActivity.timerSetBase(timer);
+        MainActivity.mtimer.stop();
+        String isDuration = MainActivity.mtimer.getText().toString();
+        MainActivity.mtimer.setBase(SystemClock.elapsedRealtime());
 
         mediaRecorder.stop();
         mediaRecorder.release();
@@ -97,7 +110,7 @@ public class MyRecorder {
 
         mDialogBuilder.setView(saveView);
 
-        final EditText userInput = (EditText) saveView.findViewById(R.id.et_save_name);
+        final EditText userInput = saveView.findViewById(R.id.et_save_name);
         mDialogBuilder
                 .setCancelable(false)
                 .setPositiveButton("Сохранить",
@@ -110,9 +123,10 @@ public class MyRecorder {
                                     String path = recordPath + "/" + recordFile;
                                     String date = format.format(new Date());
                                     String time = df.format(Calendar.getInstance().getTime());
-                                    String duration = isDuration;
+//                                    String duration = isDuration;
 
-                                    mainActivity.doInsert(title,  path, date, time, duration);
+                                    String duration = "dur";
+                                    myDbHelper.insertToDb(title, path, date, time, duration);
                                 }
                             }
                         })
@@ -127,15 +141,5 @@ public class MyRecorder {
         alertDialog.show();
 
     }
-
-
-
-//    public boolean checkPermissions(){
-//        if (ContextCompat.checkSelfPermission(this,
-//                Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(this,
-//                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-//            val permissions = arrayOf(android.Manifest.permission.RECORD_AUDIO, android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.READ_EXTERNAL_STORAGE)
-//            ActivityCompat.requestPermissions(this, permissions,0)
-//    }
 
 }

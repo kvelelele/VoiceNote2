@@ -2,16 +2,14 @@ package amir.voicenoded;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.SystemClock;
-import android.util.Log;
 import android.view.View;
 import android.widget.Chronometer;
 import android.widget.TextView;
@@ -30,14 +28,19 @@ public class MainActivity extends AppCompatActivity {
 
     private MyAdapter myAdapter;
 
-    private Chronometer timer;
+    public static Chronometer mtimer;
 
     private MyRecorder myRecoder;
 
     private boolean isRecording = false;
 
     private String recordPermission = Manifest.permission.RECORD_AUDIO;
+    private String readPermission = Manifest.permission.READ_EXTERNAL_STORAGE;
+    private String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+    private String managePermission = Manifest.permission.MANAGE_EXTERNAL_STORAGE;
     private int PERMISSION_CODE = 21;
+
+//    private AsyncRecord asyncRecord;
 
 
     @Override
@@ -52,12 +55,14 @@ public class MainActivity extends AppCompatActivity {
     public void init(){
         tvList = findViewById(R.id.tv_list);
         fabRecord = findViewById(R.id.fab_record);
-        timer = findViewById(R.id.c_chronometer);
+        mtimer = findViewById(R.id.c_chronometer);
 
 //        recycle view setting
         recordsList = findViewById(R.id.rv_records_list);
         LinearLayoutManager myLLM = new LinearLayoutManager(this);
         recordsList.setLayoutManager(myLLM);
+
+        myRecoder = new MyRecorder();
 
 //        Database helper
         myDbHelper = new MyDbHelper(this);
@@ -65,31 +70,45 @@ public class MainActivity extends AppCompatActivity {
 //          connect Adapter
         myAdapter = new MyAdapter(this);
         recordsList.setAdapter(myAdapter);
+
+//        asyncRecord = new AsyncRecord();
     }
 
-//    class AsyncRecord extends AsyncTask<Void, Void, Void>{
-//
-//        @Override
-//        protected Void doInBackground(Void... voids) {
-//
-//            onRecordClick();
-//
-//            return null;
-//        }
-//    }
+    static class AsyncRecord extends AsyncTask<Void, Void, Void>{
+
+        public AsyncRecord() {
+        }
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+
+
+
+            return null;
+        }
+    }
 
     public void onRecordClick(View view){
+//        asyncRecord.execute();
         if (isRecording) {
 
-            fabRecord.setBackgroundColor(getResources().getColor(R.color.play_pause_button));
+//                fabRecord.setBackgroundColor(getResources().getColor(R.color.play_pause_button));
+                fabRecord.setBackgroundColor(ContextCompat.getColor(this, R.color.play_pause_button));
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             myRecoder.stopRecording();
             isRecording = false;
         } else {
             if (checkPermission()) {
+                fabRecord.setBackgroundColor(ContextCompat.getColor(this, R.color.play_pause_off));
                 System.out.println("                               000000000000000");
                 myRecoder.startRecording();
                 System.out.println("                               110010110101010");
-                fabRecord.setBackgroundColor(getResources().getColor(R.color.play_pause_off));
+//                    fabRecord.setBackgroundColor(getResources().getColor(R.color.play_pause_off));
+
                 isRecording = true;
             }
         }
@@ -100,12 +119,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public boolean checkPermission(){
-        if (ActivityCompat.checkSelfPermission(this, recordPermission) == PackageManager.PERMISSION_GRANTED) {
+//        private String recordPermission = Manifest.permission.RECORD_AUDIO;
+//        private int PERMISSION_CODE = 21;
+        if (ActivityCompat.checkSelfPermission(this, recordPermission) == PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, readPermission) == PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, writePermission) == PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, managePermission) == PackageManager.PERMISSION_GRANTED) {
             return true;
         } else {
-            ActivityCompat.requestPermissions(this, new String[]{recordPermission}, PERMISSION_CODE);
+            ActivityCompat.requestPermissions(this, new String[]{recordPermission, readPermission, writePermission, managePermission}, PERMISSION_CODE);
+
+//            ActivityCompat.requestPermissions(this, new String[]{recordPermission}, PERMISSION_CODE, ) &&
+//            ActivityCompat.requestPermissions(this, new String[]{readPermission}, PERMISSION_CODE) &&
+//            ActivityCompat.requestPermissions(this, new String[]{writePermission}, PERMISSION_CODE) &&
+//            ActivityCompat.requestPermissions(this, new String[]{managePermission}, PERMISSION_CODE);
             return false;
         }
+    }
+
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
     }
 
     @Override
@@ -129,16 +170,17 @@ public class MainActivity extends AppCompatActivity {
         myDbHelper.closeDb();
     }
 
-    public static void timerStart(Chronometer t){
-        t.start();
-    }
-    public static void timerStop(Chronometer t){
-        t.stop();
-    }
-    public static void timerSetBase(Chronometer t){
-        t.setBase(SystemClock.elapsedRealtime());
-    }
-    public static String timerGetTime(Chronometer t){
-        return t.getText().toString();
-    }
+//    public static void timerStart(Chronometer t){
+//        t.start();
+//    }
+//    public static void timerStop(Chronometer t){
+//        t.stop();
+//    }
+//    public static void timerSetBase(Chronometer t){
+//        t.setBase((long)SystemClock.elapsedRealtime());
+//
+//    }
+//    public static String timerGetTime(Chronometer t){
+//        return t.getText().toString();
+//    }
 }
