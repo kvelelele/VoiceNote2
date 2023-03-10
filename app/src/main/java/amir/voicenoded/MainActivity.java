@@ -1,46 +1,59 @@
 package amir.voicenoded;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.media.MediaRecorder;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.Chronometer;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.view.View;
-import android.widget.Chronometer;
-import android.widget.TextView;
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 import amir.voicenoded.Database.MyDbHelper;
 
 public class MainActivity extends AppCompatActivity {
 
+    Context context;
+
     private TextView tvList;
     private FloatingActionButton fabRecord;
     private RecyclerView recordsList;
+    private Chronometer timer;
 
     private MyDbHelper myDbHelper;
 
     private MyAdapter myAdapter;
 
-    public static Chronometer mtimer;
+    private MediaRecorder mediaRecorder;
+    private String recordPath;
+    private String recordFile;
 
-    private MyRecorder myRecoder;
+    SimpleDateFormat format = new SimpleDateFormat("dd.MM.yyyy", Locale.getDefault());
+    DateFormat df = new SimpleDateFormat("HH:mm",Locale.getDefault());
 
     private boolean isRecording = false;
 
-    private String recordPermission = Manifest.permission.RECORD_AUDIO;
-    private String readPermission = Manifest.permission.READ_EXTERNAL_STORAGE;
-    private String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
-    private String managePermission = Manifest.permission.MANAGE_EXTERNAL_STORAGE;
-    private int PERMISSION_CODE = 21;
-
-//    private AsyncRecord asyncRecord;
+    AsyncRecord asyncRecord;
 
 
     @Override
@@ -49,20 +62,18 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         init();
-
     }
 
     public void init(){
         tvList = findViewById(R.id.tv_list);
         fabRecord = findViewById(R.id.fab_record);
-        mtimer = findViewById(R.id.c_chronometer);
+        timer = findViewById(R.id.c_chronometer);
+//        timer.setVisibility(View.INVISIBLE); // WHITE in xml
 
 //        recycle view setting
         recordsList = findViewById(R.id.rv_records_list);
         LinearLayoutManager myLLM = new LinearLayoutManager(this);
         recordsList.setLayoutManager(myLLM);
-
-        myRecoder = new MyRecorder();
 
 //        Database helper
         myDbHelper = new MyDbHelper(this);
@@ -70,57 +81,135 @@ public class MainActivity extends AppCompatActivity {
 //          connect Adapter
         myAdapter = new MyAdapter(this);
         recordsList.setAdapter(myAdapter);
-
-//        asyncRecord = new AsyncRecord();
     }
 
-    static class AsyncRecord extends AsyncTask<Void, Void, Void>{
+    class AsyncRecord extends AsyncTask <Void, Void, Void> {
 
-        public AsyncRecord() {
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            super.onProgressUpdate(values);
+
+            if(isRecording)
+                fabRecord.setBackgroundColor(getResources().getColor(R.color.play_pause_button));
+            else
+                fabRecord.setBackgroundColor(getResources().getColor(R.color.play_pause_off));
+
         }
 
         @Override
         protected Void doInBackground(Void... voids) {
 
-
+            if (isRecording) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                stopRecording();
+                publishProgress();
+                isRecording = false;
+            } else {
+                if (checkPermission()) {
+                    startRecording();
+                    publishProgress();
+                    isRecording = true;
+                }
+            }
 
             return null;
         }
     }
 
     public void onRecordClick(View view){
-//        asyncRecord.execute();
-        if (isRecording) {
+        asyncRecord = new AsyncRecord();
+        asyncRecord.execute();
 
-//                fabRecord.setBackgroundColor(getResources().getColor(R.color.play_pause_button));
-                fabRecord.setBackgroundColor(ContextCompat.getColor(this, R.color.play_pause_button));
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            myRecoder.stopRecording();
-            isRecording = false;
-        } else {
-            if (checkPermission()) {
-                fabRecord.setBackgroundColor(ContextCompat.getColor(this, R.color.play_pause_off));
-                System.out.println("                               000000000000000");
-                myRecoder.startRecording();
-                System.out.println("                               110010110101010");
-//                    fabRecord.setBackgroundColor(getResources().getColor(R.color.play_pause_off));
+    }
 
-                isRecording = true;
-            }
+    public void startRecording(){
+        recordPath = Environment.getExternalStorageDirectory().getAbsolutePath();
+
+        String date = format.format(new Date());
+        String time = df.format(Calendar.getInstance().getTime());
+
+        recordFile = "REC_" + time + "_" + date + ".3gpp";
+        mediaRecorder = new MediaRecorder();
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        mediaRecorder.setOutputFile(recordPath + "/" + recordFile);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+
+        // add insert to db
+
+        try {
+            mediaRecorder.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+        mediaRecorder.start();
     }
 
-    public void doInsert(String title, String path, String date, String time, String duration){
-        myDbHelper.insertToDb(title,  path, date, time, duration);
+
+    public void stopRecording(){
+
+        mediaRecorder.stop();
+        mediaRecorder.release();
+        mediaRecorder = null;
+
+
+        AlertDialog.Builder mDialogBuilder = new AlertDialog.Builder(this);
+        mDialogBuilder.setTitle("Заметка создана")
+                .setCancelable(false);
+
+        LayoutInflater li = LayoutInflater.from(this);
+        View saveView = li.inflate(R.layout.layout_save_dailog, null);
+        mDialogBuilder.setView(saveView);
+
+        final EditText userInput = saveView.findViewById(R.id.et_save_name);
+        mDialogBuilder
+//                .setCancelable(false)
+                .setPositiveButton("Сохранить",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                if (userInput.getText().toString().matches("")) {
+                                    userInput.setError("Введите название");
+                                } else {
+                                    String title = userInput.getText().toString();
+                                    String path = recordPath + "/" + recordFile;
+                                    String date = format.format(new Date());
+                                    String time = df.format(Calendar.getInstance().getTime());
+                                    String duration = "dur";
+
+                                    myDbHelper.insertToDb(title, path, date, time, duration);
+                                }
+                            }
+                        })
+                .setNegativeButton("Отмена",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,int id) {
+                                dialog.cancel();
+                            }
+                        });
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                AlertDialog alertDialog = mDialogBuilder.create();
+                alertDialog.show();
+            }
+        });
+
     }
+
+
+    private String recordPermission = Manifest.permission.RECORD_AUDIO;
+    private String readPermission = Manifest.permission.READ_EXTERNAL_STORAGE;
+    private String writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+    private String managePermission = Manifest.permission.MANAGE_EXTERNAL_STORAGE;
+    private int PERMISSION_CODE = 21;
 
     public boolean checkPermission(){
-//        private String recordPermission = Manifest.permission.RECORD_AUDIO;
-//        private int PERMISSION_CODE = 21;
         if (ActivityCompat.checkSelfPermission(this, recordPermission) == PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, readPermission) == PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, writePermission) == PackageManager.PERMISSION_GRANTED &&
@@ -129,11 +218,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             ActivityCompat.requestPermissions(this, new String[]{recordPermission, readPermission, writePermission, managePermission}, PERMISSION_CODE);
 
-//            ActivityCompat.requestPermissions(this, new String[]{recordPermission}, PERMISSION_CODE, ) &&
-//            ActivityCompat.requestPermissions(this, new String[]{readPermission}, PERMISSION_CODE) &&
-//            ActivityCompat.requestPermissions(this, new String[]{writePermission}, PERMISSION_CODE) &&
-//            ActivityCompat.requestPermissions(this, new String[]{managePermission}, PERMISSION_CODE);
-            return false;
+            return true;
         }
     }
 
@@ -160,7 +245,7 @@ public class MainActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         if (isRecording) {
-            myRecoder.stopRecording();
+            stopRecording();
         }
     }
 
@@ -170,17 +255,4 @@ public class MainActivity extends AppCompatActivity {
         myDbHelper.closeDb();
     }
 
-//    public static void timerStart(Chronometer t){
-//        t.start();
-//    }
-//    public static void timerStop(Chronometer t){
-//        t.stop();
-//    }
-//    public static void timerSetBase(Chronometer t){
-//        t.setBase((long)SystemClock.elapsedRealtime());
-//
-//    }
-//    public static String timerGetTime(Chronometer t){
-//        return t.getText().toString();
-//    }
 }

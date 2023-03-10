@@ -58,6 +58,7 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         public MyViewHolder(@NonNull View itemView) {
             super(itemView);
 
+
             recordName = itemView.findViewById(R.id.tv_record_name);
             date = itemView.findViewById(R.id.tv_date);
             time = itemView.findViewById(R.id.tv_time);
@@ -65,11 +66,11 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
 
         }
         public void setData(Record record){
+
             this.recordName.setText(record.getTitle());
             this.date.setText(record.getDate());
             this.time.setText(record.getTime());
             this.duration.setText(record.getDuration());
-
         }
     }
 

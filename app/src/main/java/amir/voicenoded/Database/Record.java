@@ -9,10 +9,11 @@ public class Record {
     private String time;
     private String duration;
 
-    public Record(String title, String path, String date, String duration) {
+    public Record(String title, String path, String date, String time, String duration) {
         this.title = title;
         this.path = path;
         this.date = date;
+        this.time = time;
         this.duration = duration;
     }
 
