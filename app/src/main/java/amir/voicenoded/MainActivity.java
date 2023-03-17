@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.Chronometer;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,9 +28,11 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import amir.voicenoded.Database.MyDbHelper;
+import amir.voicenoded.Database.Record;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -77,10 +80,20 @@ public class MainActivity extends AppCompatActivity {
 
 //        Database helper
         myDbHelper = new MyDbHelper(this);
+        List<Record> listRec = myDbHelper.getListRecords();
+        if(listRec.size() > 0) {
+            recordsList.setVisibility(View.VISIBLE);
+            //          connect Adapter
+            myAdapter = new MyAdapter(this, listRec);
+            recordsList.setAdapter(myAdapter);
+        } else {
+            recordsList.setVisibility(View.GONE);
+            Toast.makeText(this, "There is no contact in the database. Start adding now", Toast.LENGTH_LONG).show();
+        }
 
-//          connect Adapter
-        myAdapter = new MyAdapter(this);
-        recordsList.setAdapter(myAdapter);
+
+
+
     }
 
     class AsyncRecord extends AsyncTask <Void, Void, Void> {
@@ -175,13 +188,27 @@ public class MainActivity extends AppCompatActivity {
                                 if (userInput.getText().toString().matches("")) {
                                     userInput.setError("Введите название");
                                 } else {
+
                                     String title = userInput.getText().toString();
                                     String path = recordPath + "/" + recordFile;
                                     String date = format.format(new Date());
-                                    String time = df.format(Calendar.getInstance().getTime());
+                                    String time = "в" + df.format(Calendar.getInstance().getTime());
                                     String duration = "dur";
 
-                                    myDbHelper.insertToDb(title, path, date, time, duration);
+                                    Record newRec = new Record(title, path, date, time, duration);
+
+                                    myDbHelper.insertToDb(newRec);
+
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+
+                                            myAdapter.updateAdapter(myDbHelper.getListRecords());
+
+                                        }
+                                    });
+
+
                                 }
                             }
                         })
@@ -238,7 +265,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         myDbHelper.openDb();
-        myAdapter.updateAdapter(myDbHelper.getListRecords());
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                myAdapter.updateAdapter(myDbHelper.getListRecords());
+
+            }
+        });
+
     }
 
     @Override
@@ -252,7 +288,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        myDbHelper.closeDb();
+        if(myDbHelper != null)
+            myDbHelper.closeDb();
     }
 
 }

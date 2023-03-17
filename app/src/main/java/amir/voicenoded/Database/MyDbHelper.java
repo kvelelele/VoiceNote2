@@ -58,16 +58,28 @@ public class MyDbHelper extends SQLiteOpenHelper {
         close();
     }
 
-    public void insertToDb(String title, String path, String date, String time, String duration){
+    public void insertToDb(Record record){
         ContentValues cv = new ContentValues();
-        cv.put(TITLE, title);
-        cv.put(PATH, path);
-        cv.put(DATE, date);
-        cv.put(TIME, time);
-        cv.put(DURATION, duration);
+        cv.put(TITLE, record.getTitle());
+        cv.put(PATH, record.getPath());
+        cv.put(DATE, record.getDate());
+        cv.put(TIME, record.getTime());
+        cv.put(DURATION, record.getDuration());
         SQLiteDatabase db = this.getWritableDatabase();
         db.insert(TABLE_NAME, null, cv);
     }
+
+
+//    public void insertToDb(String title, String path, String date, String time, String duration){
+//        ContentValues cv = new ContentValues();
+//        cv.put(TITLE, title);
+//        cv.put(PATH, path);
+//        cv.put(DATE, date);
+//        cv.put(TIME, time);
+//        cv.put(DURATION, duration);
+//        SQLiteDatabase db = this.getWritableDatabase();
+//        db.insert(TABLE_NAME, null, cv);
+//    }
 
     void deleteContact(String id) {
         SQLiteDatabase db = this.getWritableDatabase();
@@ -87,6 +99,9 @@ public class MyDbHelper extends SQLiteOpenHelper {
                 String date = cursor.getString(3);
                 String time = cursor.getString(4);
                 String duration = cursor.getString(5);
+
+                listRecord.add(new Record(id, title, path, date, time, duration));
+
             } while (cursor.moveToNext());
         }
         cursor.close();

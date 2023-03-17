@@ -18,11 +18,10 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     private Context context;
     private List<Record> listRecord;
 
-    public MyAdapter(Context context) {
+    public MyAdapter(Context context, List<Record> listRec) {
         this.context = context;
         listRecord = new ArrayList<>();
     }
-//tv = record.getField
     @NonNull
     @Override
     public MyAdapter.MyViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -35,13 +34,14 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     public void onBindViewHolder(@NonNull MyAdapter.MyViewHolder holder, int position) {
 
 //        Это же в мтеоде сетДата
-//        Record record = listRecord.get(position);
-//        holder.recordName.setText(record.getTitle());
-//        holder.date.setText(record.getDate());
-//        holder.time.setText(record.getTime());
-//        holder.duration.setText(record.getDuration());
 
-        holder.setData(listRecord.get(position));
+        Record record = listRecord.get(position);
+        holder.recordName.setText(record.getTitle());
+        holder.date.setText(record.getDate());
+        holder.time.setText(record.getTime());
+        holder.duration.setText(record.getDuration());
+
+//        holder.setData(listRecord.get(position));
 
     }
 
@@ -65,18 +65,20 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             duration = itemView.findViewById(R.id.tv_duration);
 
         }
-        public void setData(Record record){
-
-            this.recordName.setText(record.getTitle());
-            this.date.setText(record.getDate());
-            this.time.setText(record.getTime());
-            this.duration.setText(record.getDuration());
-        }
+//        public void setData(Record record){
+//
+//            recordName.setText(record.getTitle());
+//            date.setText(record.getDate());
+//            time.setText(record.getTime());
+//            duration.setText(record.getDuration());
+//        }
     }
+// ДУМАЮ ЭТОТ МЕТОД НУЖНО ВОТКНУТЬ КУДА ТО
 
     public void updateAdapter(List<Record> newList) {
         listRecord.clear();
         listRecord.addAll(newList);
+
         notifyDataSetChanged();
     }
 

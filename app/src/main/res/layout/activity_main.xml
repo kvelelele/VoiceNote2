@@ -26,7 +26,6 @@
         android:id="@+id/rv_records_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginHorizontal="10dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
 
         android:layout_marginTop="70dp"
